@@ -66,7 +66,7 @@ Write-Host $Wizard -ForegroundColor Cyan
 Write-Host "Performing Location Check..." -ForegroundColor Yellow
 
 
-If(!($PSCommandPath -eq "$env:USERPROFILE\Desktop\Shawns_Magic_wand.ps1")){
+If(!($PSCommandPath -eq "$env:USERPROFILE\Desktop\Shawns_Magic_Wand.ps1")){
     [console]::beep(1000,900)
 	[console]::beep(1000,900)
     Write-Host "Friend, the directions were simple. This only works if you put me on the desktop.Press ENTER to exit, put me in the right spot, and lets try this again" -ForegroundColor Yellow -BackgroundColor Red
