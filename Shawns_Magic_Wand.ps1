@@ -99,6 +99,7 @@ Write-Host "- Install Google Chrome" -ForegroundColor Cyan
 Write-Host "- Install Adobe Reader" -ForegroundColor Cyan
 Write-Host "- Windows Updates" -ForegroundColor Cyan
 Write-Host "- Application Updates" -ForegroundColor Cyan
+Write-Host "- Create a Restore Point" -ForegroundColor Cyan
 $confirm = Read-Host "Are you sure you wish to proceed? (y/n)"
 
 If (!($confirm -eq "y")){
