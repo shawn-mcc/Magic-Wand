@@ -99,7 +99,6 @@ Write-Host "- Install Google Chrome" -ForegroundColor Cyan
 Write-Host "- Install Adobe Reader" -ForegroundColor Cyan
 Write-Host "- Windows Updates" -ForegroundColor Cyan
 Write-Host "- Application Updates" -ForegroundColor Cyan
-Write-Host "- Create a Restore Point" -ForegroundColor Cyan
 $confirm = Read-Host "Are you sure you wish to proceed? (y/n)"
 
 If (!($confirm -eq "y")){
@@ -300,34 +299,56 @@ Exit
 "@
     $ScriptContents = @"
 
-    Write-Host "Magic Wand sucessfully ran. Preparing Dispel Magic to Delete" -ForegroundColor Yellow -BackgroundColor DarkGreen
+    Write-Host "The Wizard has finished casting his spell. Preparing Dispel Magic to Delete" -ForegroundColor Green
 
     `$WandPath = "`$env:USERPROFILE\Desktop\Shawns_Magic_Wand.ps1"
+    `$DispelBatchPath = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\Dispel_Magic.bat"
 
-    `$HasError = `$True
+    `$HasErrorWand = `$True
+    `$HasErrorBatch = `$True
 
     If (Test-Path `$WandPath){
-        Write-Host "Found Wand - Deleting" -ForegroundColor Yellow
+        Write-Host "Found Magic Wand on Desktop - Attempting to Delete" -ForegroundColor Yellow
         Remove-Item -Path `$WandPath
         If (!(Test-Path `$WandPath)){
             Write-Host "Magic Wand Sucessfully Deleted" -ForegroundColor Green
-            `$HasError = `$False
+            `$HasErrorWand = `$False
         }Else{
             Write-Host "FATAL ERROR: Magic Wand was unable to be automatically uninstalled. Please manually dispel." -ForegroundColor Red -BackgroundColor Yellow
-            Read-Host
+            
         }
     }Else{
         Write-Host "FATAL ERROR: Magic Wand was unable to be automatically uninstalled because it was not able to be located on the Desktop. Please double check and manually dispel." -ForegroundColor Red -BackgroundColor Yellow
-        Read-Host
+       
     }
 
-    If ((Test-Path `$PSCommandPath) -and (`$HasError -eq `$False)){
+
+    If (Test-Path `$DispelBatchPath){
+        Write-Host "Found Dispel Magic's Ritual in Startup - Attempting to Delete" -ForegroundColor Yellow
+        Remove-Item -Path `$DispelBatchPath
+        If (!(Test-Path `$DispelBatchPath)){
+            Write-Host "Dispel Magic's Ritual Sucessfully Deleted" -ForegroundColor Green
+            `$HasErrorBatch = `$False
+        }Else{
+            Write-Host "FATAL ERROR: Dispel Magic's ritual (batch file) was unable to be automatically uninstalled. Location: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\Dispel_Magic.bat." -ForegroundColor Red -BackgroundColor Yellow
+            
+        }
+    }Else{
+        Write-Host "FATAL ERROR: Dispel Magic's ritual (batch file) was unable to be automatically uninstalled because it was not able to be located in the Startup folder. Please find and delete it." -ForegroundColor Red -BackgroundColor Yellow
+        
+    }
+
+
+    If ((Test-Path `$PSCommandPath) -and (`$HasErrorWand -eq `$False) -and (`HasErrorBatch -eq `$False)){
         Write-Host "Thank you for using Shawn's Magic Wand. Please press ENTER and Dispel Magic will dispel itself" -ForegroundColor Cyan
         Read-Host
         Remove-Item -Path `$PSCommandPath
         Exit
 
-    }
+    }Else{
+        Write-Host "Dispel Magic was unable to properly remove one or more elements of Shawn's Magic Wand. Please refrence the above errors and manually delete them, and then this program. Press any key to exit" -ForegroundColor Red
+        Read-Host
+        Exit
 "@
 
 If (!(Test-Path $StartupPath\Dispel_Magic.bat)){
