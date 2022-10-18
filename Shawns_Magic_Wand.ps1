@@ -339,7 +339,7 @@ Exit
     }
 
 
-    If ((Test-Path `$PSCommandPath) -and (`$HasErrorWand -eq `$False) -and (`HasErrorBatch -eq `$False)){
+    If ((Test-Path `$PSCommandPath) -and (`$HasErrorWand -eq `$False) -and (`$HasErrorBatch -eq `$False)){
         Write-Host "Thank you for using Shawn's Magic Wand. Please press ENTER and Dispel Magic will dispel itself" -ForegroundColor Cyan
         Read-Host
         Remove-Item -Path `$PSCommandPath
@@ -348,7 +348,7 @@ Exit
     }Else{
         Write-Host "Dispel Magic was unable to properly remove one or more elements of Shawn's Magic Wand. Please refrence the above errors and manually delete them, and then this program. Press any key to exit" -ForegroundColor Red
         Read-Host
-        Exit
+        Exit}
 "@
 
 If (!(Test-Path $StartupPath\Dispel_Magic.bat)){
