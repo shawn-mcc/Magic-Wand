@@ -99,6 +99,12 @@ Write-Host "- Install Google Chrome" -ForegroundColor Cyan
 Write-Host "- Install Adobe Reader" -ForegroundColor Cyan
 Write-Host "- Windows Updates" -ForegroundColor Cyan
 Write-Host "- Application Updates" -ForegroundColor Cyan
+Write-Host "- Delete Recent Items" -ForegroundColor Cyan
+Write-Host "- Remove PowerShell folder (to reset ExecutionPolicy)" -ForegroundColor Cyan
+Write-Host "- Empty Recycle Bin" -ForegroundColor Cyan
+Write-Host "- Self Deletion Script (Dispel Magic) will be made" -ForegroundColor Cyan
+Write-Host "- System Reboot" -ForegroundColor Cyan
+Write-Host "- Create a Restore Point" -ForegroundColor Cyan
 $confirm = Read-Host "Are you sure you wish to proceed? (y/n)"
 
 If (!($confirm -eq "y")){
@@ -179,6 +185,11 @@ Write-Host "- Disk Cleanup" -ForegroundColor Cyan
 Write-Host "- Drive Optimization" -ForegroundColor Cyan
 Write-Host "- Windows Updates" -ForegroundColor Cyan
 Write-Host "- App Updates" -ForegroundColor Cyan
+Write-Host "- Delete Recent Items" -ForegroundColor Cyan
+Write-Host "- Remove PowerShell folder (to reset ExecutionPolicy)" -ForegroundColor Cyan
+Write-Host "- Empty Recycle Bin" -ForegroundColor Cyan
+Write-Host "- Self Deletion Script (Dispel Magic) will be made" -ForegroundColor Cyan
+Write-Host "- System Reboot" -ForegroundColor Cyan
 $confirm = Read-Host "Are you sure you wish to proceed? (y/n)"
 
 If (!($confirm -eq "y")){
