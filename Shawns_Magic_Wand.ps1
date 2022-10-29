@@ -127,7 +127,7 @@ Write-Host "Google Chrome Installed" -ForegroundColor Green
 Write-Host "Installing Adobe Reader" -ForegroundColor Cyan
 $LocalTempDir = $env:TEMP
 $AdobeReaderInstaller = "AdobeReaderInstaller.exe"
-(new-object    System.Net.WebClient).DownloadFile('https://admdownload.adobe.com/bin/live/readerdc64_uk_xa_crd_install.exe', "$LocalTempDir\$AdobeReaderInstaller"); & "$LocalTempDir\$AdobeReaderInstaller" /silent /install
+(new-object    System.Net.WebClient).DownloadFile('https://admdownload.adobe.com/bin/live/readerdc64_en_xa_cra_mdr_install.exe', "$LocalTempDir\$AdobeReaderInstaller"); & "$LocalTempDir\$AdobeReaderInstaller" /silent /install
 $Process2Monitor =  "AdobeReaderInstaller"
 Do { $ProcessesFound = Get-Process | ?{$Process2Monitor -contains $_.Name} | Select-Object -ExpandProperty Name
 If ($ProcessesFound){
