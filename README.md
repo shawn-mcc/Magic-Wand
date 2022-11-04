@@ -2,9 +2,12 @@
 A PS script to make new PC setups &amp; Tune Up's Eaiser
 
 ## Instructions
-- Copy Shawn's Magic Wand on the *Desktop* of the computer (DO NOT RENAME THE FILE)
+- Go to the green "Code" button above and download this repo as a .zip file
+- Extract the .zip file in your Downloads folder and naviagte to the extracted folder
+- Copy Shawns_Magic_Wand.ps1 on the *Desktop* of the computer (DO NOT RENAME THE FILE)
 - In your windows searchbar, type ISE
 - Look for Powershell ISE, and *run it as an administrator* (The command below will not run if you do not)
+- Approve the UAC popup
 - Type the following into the terminal:
 
  > Set-ExecutionPolicy Bypass 
