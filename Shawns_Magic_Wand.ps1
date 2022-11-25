@@ -60,16 +60,73 @@ idQBBBg3\,'''''''''''''..,,,=lY.''''''''''''''''''''''''''''''''''''''''''''''''
 "@
 
 Write-Host $Wizard -ForegroundColor Cyan
+$voice = New-Object -ComObject Sapi.spvoice
+$voice.rate = 3
+
+
+
+###Function Definitions###
+
+Function Do-Windows-Updates{
+	Write-Host "Preparing Windows Updates" -ForegroundColor Cyan
+   	Install-PackageProvider -Name NuGet -Force
+	Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+    Install-Module -Name PSWindowsUpdate -Force
+   	Import-Module PSWindowsUpdate
+	Get-WindowsUpdate 
+    Install-WindowsUpdate -AcceptAll -IgnoreReboot
+    Write-Host "First Round of Windows Updates Complete. Checking twice to hopefully prevent missing any updates." -ForegroundColor Yellow
+    Get-WindowsUpdate 
+    Install-WindowsUpdate -AcceptAll -IgnoreReboot
+	Write-Host "Windows Updates completed" -ForegroundColor Green
+}
+
+Function Do-App-Updates{
+    Write-Host "Updating Applicable Apps" -ForegroundColor Cyan
+    Write-Output y|winget upgrade -h --all
+    Write-Host "App Updates completed" -ForegroundColor Green
+}
+
+Function Create-Restore-Point{
+    Write-Host "Creating System Restore Point" -ForegroundColor Cyan
+    Checkpoint-Computer -Description "Magic Wand Restore Point" -RestorePointType "MODIFY_SETTINGS" -WarningVariable wv -WarningAction SilentlyContinue
+    If ($wv -like "A new system restore point cannot be created because one has already been created within the past*"){
+        Write-Warning "A new restore point was not created because one has been made in the past 24 hours. This is usually good enough and not a cause for worry"
+    }Else{
+    Write-Host "System Restore Point created" -ForegroundColor Green
+    }
+}
+Function Sad-Beeps{
+    $SadSong = New-Object System.Media.SoundPlayer
+
+    for (($i=0);$i -lt 10; $i++){
+        If($i % 2 -eq 0){
+        $SadSong.SoundLocation = "$env:windir\Media\Windows Error.wav"
+        $SadSong.Play()
+        Start-Sleep 1
+        }Else{
+        $SadSong.SoundLocation = "$env:windir\Media\Windows Exclamation.wav"
+        $SadSong.Play()
+        Start-Sleep 1
+        }
+    }
+}
+
+Function Happy-Beeps{
+    $HappySong = New-Object System.Media.SoundPlayer
+    $HappySong.SoundLocation = "$env:windir\Media\Ring10.wav"
+    $HappySong.Play()
+}
 
 ###Location Check##
 
 Write-Host "Performing Location Check..." -ForegroundColor Yellow
 
 
-If(!($PSCommandPath -eq "$env:USERPROFILE\Desktop\Shawns_Magic_Wand.ps1")){
-    [console]::beep(1000,900)
-	[console]::beep(1000,900)
-    Write-Host "Friend, the directions were simple. This only works if you put me on the desktop.Press ENTER to exit, put me in the right spot, and lets try this again" -ForegroundColor Yellow -BackgroundColor Red
+If(!($PSCommandPath -eq "$env:USERPROFILE\Desktop\Shawns_Magic_Wand.ps1" -or $PSCommandPath -eq "$env:USERPROFILE\OneDrive\Desktop\Shawns_Magic_Wand.ps1")){
+    Sad-Beeps
+    Write-Host "Friend, the directions were simple. This only works if you put me on the desktop.Press ENTER to exit, put me in the right spot, and lets try this again" -ForegroundColor Red
+    $voice.speak("Friend, the directions were simple. This only works if you put me on the desktop.Press ENTER to exit, put me in the right spot, and lets try this again")
     Read-Host
     Exit
 }Else{
@@ -117,7 +174,8 @@ If (!($confirm -eq "y")){
 
 #1.Install Google Chrome
 Write-Host "Installing Google Chrome" -ForegroundColor Cyan
-$Path = $env:TEMP; $Installer = "chrome_installer.exe"
+$Path = $env:TEMP
+$Installer = "chrome_installer.exe"
 Invoke-WebRequest "http://dl.google.com/chrome/install/375.126/chrome_installer.exe" -OutFile $Path\$Installer
 Start-Process -FilePath $Path\$Installer -Args "/silent /install" -Verb RunAs -Wait
 Remove-Item $Path\$Installer
@@ -125,38 +183,20 @@ Write-Host "Google Chrome Installed" -ForegroundColor Green
 
 #2.Install Adobe Reader
 Write-Host "Installing Adobe Reader" -ForegroundColor Cyan
-$LocalTempDir = $env:TEMP
-$AdobeReaderInstaller = "AdobeReaderInstaller.exe"
-(new-object    System.Net.WebClient).DownloadFile('https://admdownload.adobe.com/bin/live/readerdc64_en_xa_cra_mdr_install.exe', "$LocalTempDir\$AdobeReaderInstaller"); & "$LocalTempDir\$AdobeReaderInstaller" /silent /install
-$Process2Monitor =  "AdobeReaderInstaller"
-Do { $ProcessesFound = Get-Process | ?{$Process2Monitor -contains $_.Name} | Select-Object -ExpandProperty Name
-If ($ProcessesFound){
-"Still running: $($ProcessesFound -join ', ')" | Write-Host; Start-Sleep -Seconds 2
-}Else{ 
-rm "$LocalTempDir\$AdobeReaderInstaller" -ErrorAction SilentlyContinue -Verbose 
-} 
-} Until (!$ProcessesFound)
+winget install -e --id Adobe.Acrobat.Reader.64-bit #HUGE Shoutout to winget for making this easy with one line. RIP to the week and a half I spent trying to figure to ftp into Adobe's servers to download the file
 Write-Host "Adobe Reader Installed" -ForegroundColor Green
 
 #3.Windows Updates
-Write-Host "Preparing Windows Updates" -ForegroundColor Cyan
-Install-PackageProvider -Name NuGet -Force
-Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-Install-Module -Name PSWindowsUpdate -Force
-Import-Module PSWindowsUpdate
-Get-WindowsUpdate 
-Install-WindowsUpdate -AcceptAll -IgnoreReboot
-Write-Host "Windows Updates completed" -ForegroundColor Green
+
+Do-Windows-Updates
 
 #4.Application Updates
-Write-Host "Updating Applicable Apps" -ForegroundColor Cyan
-Write-Output y|winget upgrade -h --all
-Write-Host "App Updates completed" -ForegroundColor Green
+
+Do-App-Updates
 
 #5.Create Restore Point
-Write-Host "Creating System Restore Point" -ForegroundColor Cyan
-Checkpoint-Computer -Description "Maintanence" -RestorePointType "MODIFY_SETTINGS"
-Write-Host "System Restore Point created" -ForegroundColor Green
+
+Create-Restore-Point
 
 Write-Host "Basic NPS complete" -ForegroundColor Green
 Break
@@ -201,20 +241,18 @@ If (!($confirm -eq "y")){
 }
 
 #1.Creating a Restore Point 
-    Write-Host "Creating System Restore Point" -ForegroundColor Yellow
-    Checkpoint-Computer -Description "Maintanence" -RestorePointType "MODIFY_SETTINGS"
-   	Write-Host "Creating System Restore Point completed" -ForegroundColor Green
+    Create-Restore-Point
 
 #2.Chkdsk On Next Boot
-    Write-Host "Enabling chkdsk on next boot" -ForegroundColor Yellow
+    Write-Host "Enabling chkdsk on next boot" -ForegroundColor Cyan
     Write-Output y|chkdsk c: /x /f /r
     Write-Host "chkdsk will be completed next reboot" -ForegroundColor Green
 
 #3.DISM
-	Write-Host "Starting DISM" -ForegroundColor Yellow
-    Write-Host "WARNING: DISM and SFC can both take a long time to run. Magic Wand is still running. Ctrl + Break should break the script if it appears to be unresponsive for a long (<6 hr) time" -ForegroundColor Red -BackgroundColor Yellow
+	Write-Host "Starting DISM" -ForegroundColor Cyan
+    Write-Warning "DISM and SFC can both take a long time to run. Magic Wand is still running. Clicking the red square should break the script if it appears to be unresponsive for a long (over 3 hours) time"
     Start-Process -FilePath "dism.exe" -ArgumentList '/online /cleanup-image /startcomponentcleanup' -Wait -NoNewWindow
-    Write-Host "DISM 50% complete" -ForegroundColor DarkYellow
+    Write-Host "DISM 50% complete" -ForegroundColor Yellow
     Start-Process -FilePath "dism.exe" -ArgumentList '/online /cleanup-image /restorehealth' -Wait -NoNewWindow
     Write-Host "DISM completed" -ForegroundColor Green
 
@@ -248,25 +286,17 @@ If (!($confirm -eq "y")){
 	Write-Host "Drive Optimization Complete" -ForegroundColor Green
 
 #9.Windows Updates
-	Write-Host "Preparing Windows Updates" -ForegroundColor Yellow
-   	Install-PackageProvider -Name NuGet -Force
-	Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-    Install-Module -Name PSWindowsUpdate -Force
-   	Import-Module PSWindowsUpdate
-	Get-WindowsUpdate 
-    Install-WindowsUpdate -AcceptAll -IgnoreReboot
-	Write-Host "Windows Updates completed" -ForegroundColor Green
+    Do-Windows-Updates
 
 #10.App Updates
-	Write-Host "Updating Applicable Apps" -ForegroundColor Yellow
-	Write-Output y|winget upgrade -h --all
-	Write-Host "App Updates completed" -ForegroundColor Green
+	Do-App-Updates
 
 
 Break
 }#2 (Tune Up)
 Default {
-Write-Host "A number my child. All you had to do was pick a number. Now I'm broken. Press any key to exit and try again. And let's get it right this time" -ForegroundColor Yellow -BackgroundColor Red
+Write-Host "A number my child. All you had to do was pick a number. Now I'm broken. Press any key to exit and try again. And let's get it right this time" -ForegroundColor Red
+$voice.Speak("A number my child. All you had to do was pick a number. Now I'm broken. Press any key to exit and try again. And let's get it right this time")
 Read-Host
 Exit
 }
@@ -312,20 +342,20 @@ Exit
 
     Write-Host "The Wizard has finished casting his spell. Preparing Dispel Magic to Delete" -ForegroundColor Green
 
-    `$WandPath = "`$env:USERPROFILE\Desktop\Shawns_Magic_Wand.ps1"
+    `$WandPath = "$PSCommandPath"
     `$DispelBatchPath = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\Dispel_Magic.bat"
 
     `$HasErrorWand = `$True
     `$HasErrorBatch = `$True
 
     If (Test-Path `$WandPath){
-        Write-Host "Found Magic Wand on Desktop - Attempting to Delete" -ForegroundColor Yellow
+        Write-Host "Found Magic Wand on Desktop - Attempting to Delete" -ForegroundColor Cyan
         Remove-Item -Path `$WandPath
         If (!(Test-Path `$WandPath)){
             Write-Host "Magic Wand Sucessfully Deleted" -ForegroundColor Green
             `$HasErrorWand = `$False
         }Else{
-            Write-Host "FATAL ERROR: Magic Wand was unable to be automatically uninstalled. Please manually dispel." -ForegroundColor Red -BackgroundColor Yellow
+            Write-Host "FATAL ERROR: Magic Wand was unable to be automatically uninstalled. Please manually dispel." -ForegroundColor Red
             
         }
     }Else{
@@ -335,7 +365,7 @@ Exit
 
 
     If (Test-Path `$DispelBatchPath){
-        Write-Host "Found Dispel Magic's Ritual in Startup - Attempting to Delete" -ForegroundColor Yellow
+        Write-Host "Found Dispel Magic's Ritual in Startup - Attempting to Delete" -ForegroundColor Cyan
         Remove-Item -Path `$DispelBatchPath
         If (!(Test-Path `$DispelBatchPath)){
             Write-Host "Dispel Magic's Ritual Sucessfully Deleted" -ForegroundColor Green
@@ -367,8 +397,14 @@ If (!(Test-Path $StartupPath\Dispel_Magic.bat)){
     New-Item -Path $StartupPath -name $DelBatch -Type "file" -Value $BatchContents
     Write-Host "Created Dispel Magic"
 }Else{
-    Write-Host "ERROR: Dispel Magic already exists apparently. Something broke. Please Manually Investigate Desktop and Startup folder" -ForegroundColor Red -BackgroundColor Yellow
+    Write-Host "ERROR: Dispel Magic already exists apparently. Something broke. Please Manually Investigate Desktop and Startup folder" -ForegroundColor Red
 }
 
 #5.Restart
+    Happy-Beeps
+    Write-Host "The wizard has completed his ritual. The unit will be rebooted in 10 seconds. When the system reboots and you log in, be sure to hit YES on the UAC prompt to launch Dispel Magic" -ForegroundColor Cyan
+    For($i =10;$i>0;$i--){
+        Write-Host $i -ForegroundColor Cyan
+        Start-Sleep 1
+    }
     shutdown /r /t 0
