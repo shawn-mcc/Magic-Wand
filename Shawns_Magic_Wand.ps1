@@ -62,20 +62,48 @@ idQBBBg3\,'''''''''''''..,,,=lY.''''''''''''''''''''''''''''''''''''''''''''''''
 Write-Host $Wizard -ForegroundColor Cyan
 $voice = New-Object -ComObject Sapi.spvoice
 $voice.rate = 3
+Write-Host "Performing Location Check..." -ForegroundColor Yellow
 
 
 
 ###Function Definitions###
 
 Function Do-Windows-Updates{
+    $WinUpdateEC = 0
+    $WinUpdateErrorData = ""
 	Write-Host "Preparing Windows Updates" -ForegroundColor Cyan
-   	Install-PackageProvider -Name NuGet -Force
+    Try{
+   	    Install-PackageProvider -Name NuGet -Force
+   }Catch{
+   "Unable to install NuGet. Make sure the suspect is connected to the internet and apply Windows Updates Manually"
+   $WinUpdateEC = 1
+   $WinUpdateErrorData = "Unable to install NuGet. Make sure the suspect is connected to the internet and apply Windows Updates Manually"
+   }
 	Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-    Install-Module -Name PSWindowsUpdate -Force
-   	Import-Module PSWindowsUpdate
+    Try{
+        Install-Module -Name PSWindowsUpdate -Force
+    	Import-Module PSWindowsUpdate
+    }Catch{
+    "Unable to import PSWindowsUpdate Library. Ensure the suspect is connected to the internet and try applying the updates manually"
+    $WinUpdateEC = 2
+    $WinUpdateErrorData = "Unable to import PSWindowsUpdate Library. Ensure the suspect is connected to the internet and try applying the updates manually"
+    }
+    Try{
 	Get-WindowsUpdate 
     Install-WindowsUpdate -AcceptAll -IgnoreReboot
-	Write-Host "Windows Updates completed" -ForegroundColor Green
+    }Catch{
+    "An unexpected error prevented windows updates from going through. Please attempt to manually install"
+    $WinUpdateEC = 3
+    $WinUpdateErrorData = $_
+    }
+    Add-Content $components "`nWinUpdateEC=$WinUpdateEC"
+    Add-Content $components "`nWinUpdateErrorData=$WinUpdateErrorData"
+    If(!($WinUpdateEC -eq 0)){
+        Write-Warning "Magic Wand encountered an error while installing Windows Updates. Abandoning install attempt with error code $WinUpdateEC"
+    }Else{
+        Write-Host "Windows Updates Completed" -ForegroundColor Green
+    
+}
 }
 
 Function Do-App-Updates{
@@ -85,18 +113,38 @@ Function Do-App-Updates{
 }
 
 Function Create-Restore-Point{
+    $RestoreEC = 0
+    $RestoreErrorData = ""
     Write-Host "Creating System Restore Point" -ForegroundColor Cyan
-    Checkpoint-Computer -Description "Magic Wand Restore Point" -RestorePointType "MODIFY_SETTINGS" -WarningVariable wv -WarningAction SilentlyContinue
+    Checkpoint-Computer -Description "Magic Wand Restore Point" -RestorePointType "MODIFY_SETTINGS" -WarningVariable wv -WarningAction SilentlyContinue -ErrorAction SilentlyContinue -ErrorVariable wv
     If ($wv -like "A new system restore point cannot be created because one has already been created within the past*"){
         Write-Warning "A new restore point was not created because one has been made in the past 24 hours. This is usually good enough and not a cause for worry"
+        $RestoreEC = 1
+        $RestoreErrorData = "A new restore point was not created because one has been made in the past 24 hours. This is usually good enough and not a cause for worry"
+    }ElseIf($wv -like "*the service cannot be started because it is disabled or does not have enabled devices associated with it*"){
+        Write-Warning "System Restore point is currently disabled. This is common on older PC's, or those that originally came in S mode. Magic Wand will attempt to enable it for you."
+        Try{
+            Enable-ComputerRestore -Drive "C:\"
+            Checkpoint-Computer -Description "Magic Wand Restore Point" -RestorePointType "MODIFY_SETTINGS" -WarningVariable wv -WarningAction SilentlyContinue -ErrorAction SilentlyContinue -ErrorVariable wv
+        }Catch{
+            "Magic Wand was unable to activate Restore point. The suspect potentially does not have the technical capability to activate it."
+            $RestoreEC =2
+            $RestoreErrorData = "The suspect does not have Restore Point enabled, and Magic Wand was not able to activate it. The suspect may not support this feature."
+        }
+
+        }
+        Add-Content $components "`nRestoreEC = $RestoreEC"
+        Add-Content $components "`nRestoreErrorData = $RestoreErrorData"
+    If(!($RestoreEC -eq 0)){
+        Write-Warning "Magic Wand was unable to create a restore point. Proceeding without creating one. Error code $RestoreEC"
     }Else{
-    Write-Host "System Restore Point created" -ForegroundColor Green
-    }
+        Write-Host "System Restore Point Created" -ForegroundColor Green
+}
 }
 Function Sad-Beeps{
     $SadSong = New-Object System.Media.SoundPlayer
 
-    for (($i=0);$i -lt 10; $i++){
+    for (($i=0);$i -lt 4; $i++){
         If($i % 2 -eq 0){
         $SadSong.SoundLocation = "$env:windir\Media\Windows Error.wav"
         $SadSong.Play()
@@ -109,70 +157,6 @@ Function Sad-Beeps{
     }
 }
 
-Function Install-WinGet {
-    #Install the latest package from GitHub
-    [cmdletbinding(SupportsShouldProcess)]
-    [alias("iwg")]
-    [OutputType("None")]
-    [OutputType("Microsoft.Windows.Appx.PackageManager.Commands.AppxPackage")]
-    Param(
-        [Parameter(HelpMessage = "Display the AppxPackage after installation.")]
-        [switch]$Passthru
-    )
-
-    Write-Verbose "[$((Get-Date).TimeofDay)] Starting $($myinvocation.mycommand)"
-
-    if ($PSVersionTable.PSVersion.Major -eq 7) {
-        Write-Warning "This command does not work in PowerShell 7. You must install in Windows PowerShell."
-        return
-    }
-
-    #test for requirement
-    $Requirement = Get-AppPackage "Microsoft.DesktopAppInstaller"
-    if (-Not $requirement) {
-        Write-Verbose "Installing Desktop App Installer requirement"
-        Try {
-            Add-AppxPackage -Path "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx" -erroraction Stop
-        }
-        Catch {
-            Throw $_
-        }
-    }
-
-    $uri = "https://api.github.com/repos/microsoft/winget-cli/releases"
-
-    Try {
-        Write-Verbose "[$((Get-Date).TimeofDay)] Getting information from $uri"
-        $get = Invoke-RestMethod -uri $uri -Method Get -ErrorAction stop
-
-        Write-Verbose "[$((Get-Date).TimeofDay)] getting latest release"
-        #$data = $get | Select-Object -first 1
-        $data = $get[0].assets | Where-Object name -Match 'msixbundle'
-
-        $appx = $data.browser_download_url
-        #$data.assets[0].browser_download_url
-        Write-Verbose "[$((Get-Date).TimeofDay)] $appx"
-        If ($pscmdlet.ShouldProcess($appx, "Downloading asset")) {
-            $file = Join-Path -path $env:temp -ChildPath $data.name
-
-            Write-Verbose "[$((Get-Date).TimeofDay)] Saving to $file"
-            Invoke-WebRequest -Uri $appx -UseBasicParsing -DisableKeepAlive -OutFile $file
-
-            Write-Verbose "[$((Get-Date).TimeofDay)] Adding Appx Package"
-            Add-AppxPackage -Path $file -ErrorAction Stop
-
-            if ($passthru) {
-                Get-AppxPackage microsoft.desktopAppInstaller
-            }
-        }
-    } #Try
-    Catch {
-        Write-Verbose "[$((Get-Date).TimeofDay)] There was an error."
-        Throw $_
-    }
-    Write-Verbose "[$((Get-Date).TimeofDay)] Ending $($myinvocation.mycommand)"
-}
-
 Function Happy-Beeps{
     $HappySong = New-Object System.Media.SoundPlayer
     $HappySong.SoundLocation = "$env:windir\Media\Ring10.wav"
@@ -181,7 +165,7 @@ Function Happy-Beeps{
 
 ###Location Check##
 
-Write-Host "Performing Location Check..." -ForegroundColor Yellow
+
 
 
 If(!($PSCommandPath -eq "$env:USERPROFILE\Desktop\Shawns_Magic_Wand.ps1" -or $PSCommandPath -eq "$env:USERPROFILE\OneDrive\Desktop\Shawns_Magic_Wand.ps1")){
@@ -194,6 +178,26 @@ If(!($PSCommandPath -eq "$env:USERPROFILE\Desktop\Shawns_Magic_Wand.ps1" -or $PS
     Write-Host "Location on Desktop Verified" -ForegroundColor Green
 }
 
+###Creating Spell_Components###
+
+Write-Host "Building Spell Component Template" -ForegroundColor Yellow
+If(Test-Path -Path "$env:USERPROFILE\Desktop\Spell_Components"){
+    Write-Warning "Spell Components folder already detected, attempting to reset and recreate"
+    Remove-Item -Path "$env:USERPROFILE\Desktop\Spell_Components" -Recurse
+}
+New-Item "$env:USERPROFILE\Desktop\Spell_Components" -ItemType Directory
+New-Item $env:USERPROFILE\Desktop\Spell_Components\components.txt -ItemType File
+$components = "$env:USERPROFILE\Desktop\Spell_Components\components.txt"
+Add-Content $components "Suspect_Name=$env:computername"
+$Manufacturer = Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object -Property Manufacturer
+Add-Content $components "`nManufacturer=$Manufacturer"
+$Model_Number = Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object -Property Model
+Add-Content $components "`nModel=$Model_Number"
+$BIOS = Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object -Property SystemType
+Add-Content $components "`nBIOS=$BIOS"
+$Start_Time = Get-Date
+Add-Content $components "`nStart_Time=$Start_Time"
+Write-Host "Spell Component Template Created Sucessfully" -ForegroundColor Green
 ##Spell Selection##
 #1.NPS
 #2.Tune Up
@@ -202,6 +206,7 @@ Write-Host "Thank you for using choosing my Magic Wand. Please select a spell fr
 Write-Host "1 - NPS " -ForegroundColor Cyan
 Write-Host "2- Tune Up " -ForegroundColor Cyan
 $SpellSelection = Read-Host "Enter the number for the spell you want the wizard to cast "
+
 
 Switch($SpellSelection){
 
@@ -231,23 +236,58 @@ If (!($confirm -eq "y")){
     Exit
 }Else{
     Write-Host "NPS confirmed. The wizard is beginning his ritual" -ForegroundColor Green
+    Add-Content $components "`nSpellSelection=NPS"
 }
 
 #1.Install Google Chrome
 Write-Host "Installing Google Chrome" -ForegroundColor Cyan
+$ChromeEC = 0
+$ChromeErrorData = ""
 $Path = $env:TEMP
 $Installer = "chrome_installer.exe"
-Invoke-WebRequest "http://dl.google.com/chrome/install/375.126/chrome_installer.exe" -OutFile $Path\$Installer
-Start-Process -FilePath $Path\$Installer -Args "/silent /install" -Verb RunAs -Wait
-Remove-Item $Path\$Installer
-Write-Host "Google Chrome Installed" -ForegroundColor Green
+try{
+    Invoke-WebRequest "http://dl.google.com/chrome/install/375.126/chrome_installer.exe" -OutFile $Path\$Installer
+    Start-Process -FilePath $Path\$Installer -Args "/silent /install" -Verb RunAs -Wait
+    Remove-Item $Path\$Installer
+    }catch  [System.Net.WebException],[System.IO.IOException]{
+        "Unable to connect to Chrome's installer. Please make sure the suspect is connected to the internet and try again"
+        $ChromeEC = 1
+        $ChromeErrorData = "Unable to connect to Chrome's installer. Please make sure the suspect is connected to the internet and try again"
+        }
+    catch{
+        "An unexpected error is preventing magic wand from installing Chrome."
+        $ChromeEC = 2
+        $ChromeErrorData = $_
+        }Finally{
+        Add-Content $components "`nChromeEC=$ChromeEC"
+        Add-Content $components "`nChromeErrorData=$ChromeErrorData"
+        }
+If(!($ChromeEC -eq 0)){
+    Write-Warning "Magic Wand was unable to install chrome automatically. Abandoning Chrome Installation with Error Code $ChromeEC"
+    }Else{
+    Write-Host "Google Chrome Installed" -ForegroundColor Green
+    }
 
 #2.Install Adobe Reader
-Write-Host "Installing Winget package manager (used for Adobe Reader)" -ForegroundColor Cyan
-Install-WinGet 
 Write-Host "Installing Adobe Reader" -ForegroundColor Cyan
-winget install -e --id Adobe.Acrobat.Reader.64-bit --accept-package-agreements --accept-source-agreements #HUGE Shoutout to winget for making this easy with one line. RIP to the week and a half I spent trying to figure to ftp into Adobe's servers to download the file
-Write-Host "Adobe Reader Installed" -ForegroundColor Green
+$AdobeEC = 0
+$AdobeErrorData = ""
+Try{
+    winget install -e --id Adobe.Acrobat.Reader.64-bit #HUGE Shoutout to winget for making this easy with one line. RIP to the week and a half I spent trying to figure to ftp into Adobe's servers to download the file
+    }Catch{
+    "An unkown error has prevented Magic Wand from installing Adobe Reader."
+    $AdobeEC = 1
+    $AdobeErrorData = $_
+    }Finally{
+    Add-Content $components "`nAdobeEC=$AdobeEC"
+    Add-Content $components "`nAdobeErrorData=$AdobeErrorData"
+    }
+
+If(!($AdobeEC -eq 0)){
+    Write-Warning "Magic Wand was unable to install Adobe Reader automatically. Abandoning Installation with Error Code $AdobeEC"
+    }Else{
+    Write-Host "Adobe Reader Installed" -ForegroundColor Green
+    }
 
 #3.Windows Updates
 
@@ -277,7 +317,7 @@ Break
 #9.Windows Updates
 #10.App Updates
 
-Write-Host "You have chosen to cast NPS. The following actions will be performed: " -ForegroundColor Cyan
+Write-Host "You have chosen to cast Tune Up. The following actions will be performed: " -ForegroundColor Cyan
 Write-Host "- Create a Restore Point" -ForegroundColor Cyan
 Write-Host "- chkdsk enabled on next reboot" -ForegroundColor Cyan
 Write-Host "- DISM" -ForegroundColor Cyan
@@ -301,6 +341,7 @@ If (!($confirm -eq "y")){
     Exit
 }Else{
     Write-Host "Tune Up confirmed. The wizard is beginning his ritual" -ForegroundColor Green
+    Add-Content $components "`nSpellSelection=Tune-Up"
 }
 
 #1.Creating a Restore Point 
@@ -314,14 +355,14 @@ If (!($confirm -eq "y")){
 #3.DISM
 	Write-Host "Starting DISM" -ForegroundColor Cyan
     Write-Warning "DISM and SFC can both take a long time to run. Magic Wand is still running. Clicking the red square should break the script if it appears to be unresponsive for a long (over 3 hours) time"
-    Start-Process -FilePath "dism.exe" -ArgumentList '/online /cleanup-image /startcomponentcleanup' -Wait -NoNewWindow
+    Start-Process -FilePath "dism.exe" -ArgumentList '/online /cleanup-image /startcomponentcleanup' -Wait
     Write-Host "DISM 50% complete" -ForegroundColor Yellow
-    Start-Process -FilePath "dism.exe" -ArgumentList '/online /cleanup-image /restorehealth' -Wait -NoNewWindow
+    Start-Process -FilePath "dism.exe" -ArgumentList '/online /cleanup-image /restorehealth' -Wait 
     Write-Host "DISM completed" -ForegroundColor Green
 
 #4.SFC
     Write-Host "Starting SFC" -ForegroundColor Yellow
-    Start-Process -FilePath "sfc.exe" -ArgumentList '/scannow' -Wait -NoNewWindow 
+    Start-Process -FilePath "sfc.exe" -ArgumentList '/scannow' -Wait  
    	Write-Host "SFC completed" -ForegroundColor Green
 
 #5.Delete User Temp files   
@@ -395,6 +436,8 @@ Exit
 
     $DelBatch = "Dispel_Magic.bat"
 
+    
+
     $BatchContents = @"
     @echo OFF
     PowerShell.exe -NoProfile -Command "& {Start-Process PowerShell.exe -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File ""$env:USERPROFILE\Desktop\Dispel_Magic.ps1""' -Verb RunAs}"
@@ -407,9 +450,11 @@ Exit
 
     `$WandPath = "$PSCommandPath"
     `$DispelBatchPath = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\Dispel_Magic.bat"
+    `$CompPath = "$env:USERPROFILE\Desktop\Spell_Components"
 
     `$HasErrorWand = `$True
     `$HasErrorBatch = `$True
+    `$HasErrorComp = `$True
 
     If (Test-Path `$WandPath){
         Write-Host "Found Magic Wand on Desktop - Attempting to Delete" -ForegroundColor Cyan
@@ -442,8 +487,24 @@ Exit
         
     }
 
+    If (Test-Path `$CompPath){
+        Write-Host "Found Spell Components on Desktop - Attempting to Delete" -ForegroundColor Cyan
+        Remove-Item -Path `$CompPath -Recurse
+        If (!(Test-Path `$DispelBatchPath)){
+            Write-Host "Spell Components Sucessfully Deleted" -ForegroundColor Green
+            `$HasErrorComp = `$False
+        }Else{
+            Write-Host "FATAL ERROR: Spell Components were unable to be automatically uninstalled from the Desktop. Please Manually Remove." -ForegroundColor Red 
+            
+        }
+    }Else{
+        Write-Host "FATAL ERROR: Spell Components were not able to be located on the desktop. Please find and delete them." -ForegroundColor Red
+        
+    }
 
-    If ((Test-Path `$PSCommandPath) -and (`$HasErrorWand -eq `$False) -and (`$HasErrorBatch -eq `$False)){
+
+
+    If ((Test-Path `$PSCommandPath) -and (`$HasErrorWand -eq `$False) -and (`$HasErrorBatch -eq `$False) -and (`$HasErrorComp -eq `$False)){
         Write-Host "Thank you for using Shawn's Magic Wand. Please press ENTER and Dispel Magic will dispel itself" -ForegroundColor Cyan
         Read-Host
         Remove-Item -Path `$PSCommandPath
@@ -465,9 +526,6 @@ If (!(Test-Path $StartupPath\Dispel_Magic.bat)){
 
 #5.Restart
     Happy-Beeps
-    Write-Host "The wizard has completed his ritual. The unit will be rebooted in 10 seconds. When the system reboots and you log in, be sure to hit YES on the UAC prompt to launch Dispel Magic" -ForegroundColor Cyan
-    For($i =10;$i>0;$i--){
-        Write-Host $i -ForegroundColor Cyan
-        Start-Sleep 1
-    }
+    $wshell = New-Object -ComObject Wscript.Shell
+    $wshell.Popup("The wizard has completed his ritual. The unit will be rebooted in 30 seconds. When the system reboots and you log in, be sure to hit YES on the UAC prompt to launch Dispel Magic",30,"Ritual Complete",0x0)
     shutdown /r /t 0
