@@ -63,26 +63,19 @@ A PS script to make new PC setups &amp; Tune Up's Eaiser.
 - NOTE: This program deletes itself after running. If you'd like to keep a copy of it, it is highly recomended to keep it on something like a flash drive and copy it onto Dekstops of computers you're working on. You can ignore this if you're running it one time on a personal device.
 
 
-## 1.1 Changelog
+## 1.2 Changelog
 
 ### Bug Fixes
-- Fixed issue with location check not verifying correctly when the user has their Desktop synced with OneDrive
-- Fixed issue in NPS where Adobe Reader did not correctly initialize, causing installation to fail.
-- Windows Updates now attempt to download and install updates twice to hopefully prevent missing updates.
+- [✔] Fixed issue where Happy-Beeps and the 10 second countdown does not work
+- [✔] Fixed issue with winget not properly applying updates
+- [✔] Fixed error catching in creating a restore point if the suspect was originally in S mode. (Magic wand will now attempt to enable the service if it is disabled)
 
 ### New Features
-- The Wizard now has a voice and will tell you when a fatal error is encountered (with all the necessary sass)
-- The system-level beeps have been replaced with default windows sounds to be more pleasant. (See: Happy-Beeps & Sad-Beeps)
-- Magic Wand will now play Happy-Beeps and start a 10 second countdown upon completion so that the reboot isn't as sudden
+- [✔] Spell components feature added to store variables and error data
+- [] Add end report HTML file for visual feedback of completion and any error data from spell components
+- [] Add support to install VLC media player in NPS?
+- [] Add check to see if Magic Wand lives in download (i.e. downloaded from github instead of on a flash drive) and remove it from downloads if it does.
 
 ### Quality of Life Improvements
-- Added function definitions to beginning of code for reuse later to make code more compartmentalized
-- Added graceful error handling for most events
-- Standardized color scheme for messages (cyan), updates(yellow), warnings(orange), failures(red)
-- Updated Readme.md insturctions and included pictures. 
-
-
-
-
-
-
+- [✔] Added graceful error handling for more events and stores error data to be used in end reprot
+- [✔] DISM and SFC now create a new window to show progress
