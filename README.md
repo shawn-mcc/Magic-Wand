@@ -1,7 +1,7 @@
 # Magic-Wand
 A PS script to make new PC setups &amp; Tune Up's Eaiser.
 
-#### Version 1.1
+#### Version 1.2 Beta (not all features functional yet, see changelog at end of file)
 
 
 
