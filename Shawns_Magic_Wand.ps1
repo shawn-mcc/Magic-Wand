@@ -273,7 +273,7 @@ Write-Host "Installing Adobe Reader" -ForegroundColor Cyan
 $AdobeEC = 0
 $AdobeErrorData = ""
 Try{
-    winget install -e --id Adobe.Acrobat.Reader.64-bit #HUGE Shoutout to winget for making this easy with one line. RIP to the week and a half I spent trying to figure to ftp into Adobe's servers to download the file
+    winget install -e --id Adobe.Acrobat.Reader.64-bit --accept-source-agreements --accept-package-agreements #HUGE Shoutout to winget for making this easy with one line. RIP to the week and a half I spent trying to figure to ftp into Adobe's servers to download the file
     }Catch{
     "An unkown error has prevented Magic Wand from installing Adobe Reader."
     $AdobeEC = 1
