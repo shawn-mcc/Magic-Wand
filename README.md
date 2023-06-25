@@ -72,10 +72,28 @@ A PS script to make new PC setups &amp; Tune Up's Eaiser.
 
 ### New Features
 - [✔] Spell components feature added to store variables and error data
-- [] Add end report HTML file for visual feedback of completion and any error data from spell components
-- [] Add support to install VLC media player in NPS?
-- [] Add check to see if Magic Wand lives in download (i.e. downloaded from github instead of on a flash drive) and remove it from downloads if it does.
+  <i> Please note that these have to currently be manually referenced. A future realease will prioritize the application parsing and presenting any errors </i>
+- [❌] Add end report HTML file for visual feedback of completion and any error data from spell components.
+<i>Idea put on backburner pending movement from .ps1 to .exe</i>
+- [❌] Add support to install VLC media player in NPS?
+ <i> Will be addressed in later release </i>
+- [❌] Add check to see if Magic Wand lives in download (i.e. downloaded from github instead of on a flash drive) and remove it from downloads if it does.
+ <i>Should be a non-issue in future releases pending migration to .exe.</i>
 
 ### Quality of Life Improvements
 - [✔] Added graceful error handling for more events and stores error data to be used in end reprot
 - [✔] DISM and SFC now create a new window to show progress
+
+### Known Issues
+- Occasional bug still with installing Adobe Reader onto NPS rituals.
+  <i> I suspect this has something to do with winget and computers that were originally in S mode, but am not sure yet. </i>
+- Dispel magic's UAC prompt does not always trigger after reboot.
+  <i> This one has me stumped because I'm not sure what causes the UAC to not come up. I'm going to research better ways to relaunch programs on reboot rather than move them to the startup folder. For now, <b>the workaround is to simply find the dispel magic script on the desktop and run it</b>.</i>
+- Magic wand doesn't check to see if there are additional or failed windows updates after it's finished, so you must still verify all updates are installed.
+  <i>Going to try to implement this as a feature once I find a better way to relaunch after reboot.</i>
+
+### Future Plans
+- The goal of magic wand is to make things convienient. While it does help automate a lot of processes, the steps outlined in the instructions above are still very cumbersome. The next major goal of Shawn's Magic Wand is to migrate to a true application (.exe file) instead of just a powershell script (.ps1).
+- My hope is that by becoming a simple executable, the tool will become much eaiser to streamline and use.
+- Running as an application instead of a script means we might gain access to new features regarding reboot behavior, as well as not as many hoops to jump through to run it in the first place.
+- Also want to change the configuration of spell components from .txt to .json to make them eaisly readable to the program.
