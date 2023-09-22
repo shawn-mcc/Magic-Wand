@@ -510,8 +510,8 @@ Function Start_Grand_Finale{
             @echo OFF
             timeout 10 
             cd $env:USERPROFILE\Desktop
-            rm Shawns_Magic_Wand.exe
-            rm Dispel_Magic_2.bat
+            del Shawns_Magic_Wand.exe
+            del Dispel_Magic_2.bat
 "@
             New-Item -Path "$env:USERPROFILE\Desktop" -name "Dispel_Magic_2.bat" -Type "file" -Value $DispelContents
             
