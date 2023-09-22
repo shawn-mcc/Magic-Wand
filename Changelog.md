@@ -1,13 +1,22 @@
 # Shawn's Magic Wand
+# Changelog
+## Version 2.0.1
 
-  
+### Bugfixes
+- Fixed bug that prevented Dispel_Magic_2 from properly launching to delete Magic Wand after completion.
+- Removed error catching for emptying recycle bin due to always throwing false positives.
+- Changed initial Error_Num variable in Spell Components from null to 0 in order to prevent issues refering to null value in the case of no errors. 
 
-# Changelog Version 2.0.0
+### New Features
+- Added Desktop OneDrive sync and added new catch to let user know if that is the problem.
+- Added check to NPS to see if Adobe is already installed before trying to install it.
+
+## Version 2.0.0
 This is our first major update since the projects original inception! Many features have been added, changed, or overhauled. Please see below for the changes that were made. Please reach out and let me know if you encounter a bug or error that is not mentioned here.
 
-## New Features
+### New Features
 
-### General:
+#### General:
 - Now an executable! No more having to run the program from ISE and manually changing ExecutionPolicy's!
 - Removed the voice feature of the Wizard (too annoying)
 - Extended Happy Beeps and Sad Beeps play time for relevant events
@@ -29,16 +38,16 @@ This is our first major update since the projects original inception! Many featu
 - Added a 2nd dispel magic script for self-deletion since an exe cannot delete itself like a ps1 file can.
 - Reboots a final time after everything is complete and the magic wand has deleted itself.
 
-### New PC Setup (NPS)
+#### New PC Setup (NPS)
 - Now installs VLC Media player in addition to it's other software.
 - Performs initial Winget library setup
 
-### Tune-Up
+#### Tune-Up
 - Now removes Pre-Fetch files in addition to user and OS temp files
 - Now attempts to enable disk cleanup if it is disabled
 - Clearing the recycle bin now clears it for all users instead of just the current one
 
-## Known Issues
+### Known Issues
 If you encounter an error that is not in this list, please open an issue on GitHub or reach out to me and let me know.
 
 - Magic Wand does not recognize it is placed on the desktop if the desktop is synced with OneDrive. 
@@ -51,7 +60,7 @@ If you encounter an error that is not in this list, please open an issue on GitH
 	- *I don't currently know what causes this, but it seems to be exclusive to older systems, and even then it's not a constant issue. The older system I tested on which was the only one to give this problem seemed to work ~ 90% of the time*
 	- *Since Magic Wand now handles post-reboot actions using Spell Components, if the UAC doesn't automatically trigger after reboot, you can simply relaunch the exe (make sure you do it as an admin) and it will pick up from where it left off* 
 
-## Future Plans
+### Future Plans
 
 None of these features are guaranteed, just ideas I would like to work on implementing next.
 
