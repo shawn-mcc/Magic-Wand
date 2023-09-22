@@ -63,6 +63,14 @@ idQBBBg3\,'''''''''''''..,,,=lY.''''''''''''''''''''''''''''''''''''''''''''''''
 Write-Host $Wizard -ForegroundColor Cyan
 $global:Error_Num = 0
 
+Write-Host "Shawn's Magic Wand v2.0.1" -ForegroundColor Gray
+
+Write-Host "© 2022-2023 Shawn McCausland" -ForegroundColor Gray
+Write-Host " "
+Write-Host "Thank you for choosing Shawn's Magic Wand. This software is provided for free and `"as-is`", without warranty of any kind under a MIT License. Find full license at " -ForegroundColor Gray -NoNewline
+Write-Host "www.https://github.com/shawn-mcc/Magic-Wand/blob/main/LICENSE" -ForegroundColor DarkGray
+Write-Host " "
+
 ###Function Definitions###
 
 Function Add-NoteProperty {
@@ -143,9 +151,11 @@ Function Update_Steps($name){
     $current += 1
     $Components_Json.Spell_Components.Ritual_Details.Current_Step = $current
     $out = $type + " Step: " + $current + "/" + $total + " - " + $name
+    Write-Host " "
     Write-Host "====================================================" -ForegroundColor Cyan
     Write-Host $out -ForegroundColor Cyan
     Write-Host "====================================================" -ForegroundColor Cyan
+    Write-Host " "
     Update_Json
 
 }
@@ -384,7 +394,7 @@ Function Start_Grand_Finale{
     Write-Host "Bios Version: " $Suspect_Details.BIOSVersion -ForegroundColor Magenta
     Write-Host "BIOS Type: " $Suspect_Details.BIOSType -ForegroundColor Magenta
     Write-Host "Admin Password Status: " $Suspect_Details.AdminPWStatus -ForegroundColor Magenta
-    Write-Host 
+    Write-Host " "
     Write-Host "========================================================" -ForegroundColor Gray 
     Write-Host "                 Ritual Details                       " -ForegroundColor Gray
     Write-Host "========================================================" -ForegroundColor Gray
@@ -428,7 +438,8 @@ Function Start_Grand_Finale{
         Write-Host "16 - Remove PowerShell folder (to reset ExecutionPolicy)" -ForegroundColor Cyan
         Write-Host "17 - Delete Recent Items" -ForegroundColor Cyan
         Write-Host "18 - Run Dispel Magic (Self Deletion Script)" -ForegroundColor Cyan
-        Write-Host ""
+        Write-Host " "
+        Write-Host " "
     }
     If(!($Ritual_Details.Error_Count -eq 0)){
         $Errors = $Ritual_Details.Errors
@@ -442,11 +453,11 @@ Function Start_Grand_Finale{
            Write-Host "Error Message: " $error.Error_Message -ForegroundColor Red
            Write-Host "The Wizard's Advice: " $error.Wiz_Rec -ForegroundColor Cyan
            Write-Host "===========================================" -ForegroundColor Gray
-           Write-Host ""
+           Write-Host " "
      
         }
     }Else{
-        Write-Host ""
+        Write-Host " "
         Write-Host "Magic Wand Encountered 0 Issues and completed it's ritual!" -ForegroundColor Green
     }
 
@@ -509,7 +520,7 @@ Function Start_Grand_Finale{
         ###4 - Final Check###
 
         If (($ComponentHasError -eq $False) -and ($DispelHasError -eq $False)){
-            Invoke-Expression -Command "./Dispel_Magic_2.bat" #call the batch here so that it doesn't trigger if there was an error removing a different component
+            Invoke-Expression -Command "$env:USERPROFILE\Desktop\Dispel_Magic_2.bat" #call the batch here so that it doesn't trigger if there was an error removing a different component
             Happy_Beeps
             $wshell = New-Object -ComObject Wscript.Shell
             $wshell.Popup("Spell Components and Dispel Magic have been removed from the computer. In 45 seconds, it will reboot one last time and then it should be good to go! Thank you for choosing Shawn's Magic Wand!",30,"Ritual Complete",0x0)
@@ -568,7 +579,13 @@ $WandDeskLoc = $env:USERPROFILE + "\Desktop\Shawns_Magic_Wand.exe"
 If(Test-Path $WandDeskLoc){
     Write-Host "Magic Wand verified on Desktop" -ForegroundColor Green
 }Else{
-    Critical_Error -ev "NOT LOCATED ON DESKTOP" -Wiz_Message "Shawns_Magic_Wand.exe MUST be located on the desktop to function properly. Please exit and move the file before trying again." -Allow_Continue "False"
+    Write-Host "Magic Wand not detected, attempting to see if OneDrive Desktop is active..." -ForegroundColor Yellow
+    $OneDriveDeskLoc = $env:USERPROFILE +"\OneDrive\Desktop\Shawns_Magic_Wand.exe"
+    If(Test-Path $OneDriveDeskLoc){
+        Critical_Error -ev "DESKTOP SYNCED TO ONEDRIVE" -Wiz_Message "It appears that the user's Desktop is synced to onedrive. Please move Shawn's Magic Wand to the local desktop and try again." -Allow_Continue "False"
+    }Else{
+        Critical_Error -ev "NOT LOCATED ON DESKTOP" -Wiz_Message "Shawns_Magic_Wand.exe MUST be located on the desktop to function properly. Please exit and move the file before trying again." -Allow_Continue "False"
+    }
 }
 
 ###Check to see if pesky Mcafee is in the way###
@@ -584,7 +601,7 @@ Write-Host "No Conflicts detected, or they have been overridden by the user" -Fo
 
 ###Spell Selection###
 
-Write-Host "Thank you for using choosing Shawn's Magic Wand (v. 2.0.0). Please select a spell from the options below: " -ForegroundColor Cyan
+Write-Host "Thank you for using choosing Shawn's Magic Wand (v. 2.0.1). Please select a spell from the options below: " -ForegroundColor Cyan
 Write-Host "1 - New PC Setup " -ForegroundColor Cyan
 Write-Host "2 - Tune Up " -ForegroundColor Cyan
 $SpellSelection = Read-Host "Enter the number for the spell you want the wizard to cast "
@@ -681,18 +698,22 @@ If(!($confirm -eq "y" -or $confirm -eq "Y")){
 
     ###3 - Install Adobe Reader###
     Update_Steps -name "Installing Adobe Reader"
-    Write-Host "Getting latest Adobe Reader version..." -ForegroundColor Yellow
-    Try{
-    winget install -e --id Adobe.Acrobat.Reader.64-bit --accept-source-agreements --accept-package-agreements
-    }Catch{
-        Add_Error -err_msg $ev -wiz_rec "Failed to install Adobe Reader. Please Install Manually"     
-    }Finally{
-        Write-Host "Adobe Reader Installation Complete!" -ForegroundColor Green
-    }
+    $AdobeInstalled = Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | where {$_.DisplayName -like "Adobe Acrobat*"}
+    If($AdobeInstalled -eq $null){
+        Write-Host "Getting latest Adobe Reader version..." -ForegroundColor Yellow
+        Try{
+        winget install -e --id Adobe.Acrobat.Reader.64-bit --accept-source-agreements --accept-package-agreements
+        }Catch{
+            Add_Error -err_msg $ev -wiz_rec "Failed to install Adobe Reader. Please Install Manually"     
+        }Finally{
+            Write-Host "Adobe Reader Installation Complete!" -ForegroundColor Green
+        }
+    }Else{
+        Write-Host "Adobe Reader already installed"
+        }
 
     ###4 - Install VLC Media Player###
     Update_Steps -name "Installing VLC Media Player"
-    Start-Sleep 5
     Write-Host "Getting latest VLC version..." -ForegroundColor Yellow
     Try{
     winget install -e --id VideoLAN.VLC --accept-source-agreements --accept-package-agreements
@@ -806,12 +827,11 @@ Break
         ###5 - Delete User Tmp Files###
         Update_Steps -name "Deleting User Tmp Files"
         Write-Host "Deleting User Tmp Files..." -ForegroundColor Yellow
-        $temp = get-ChildItem "env:\TEMP"   
-        $temp2 = $temp.Value 
+        $usrTemp = "$env:USERPROFILE\AppData\Local\Temp"
         Try{
-            Remove-Item -Recurse  "$temp2\*" -Force -ErrorAction SilentlyContinue -ErrorVariable ev
+            Remove-Item -Recurse  "$usrTemp\*" -Force -ErrorAction SilentlyContinue -ErrorVariable ev
             }Catch{
-                Add_Error -err_msg $ev -wiz_rec " Failed to delete tmp files at $temp2. Please delete manually"     
+                Add_Error -err_msg $ev -wiz_rec " Failed to delete tmp files at $usrTemp. Please delete manually"     
             }Finally{
                 Write-Host "Temporary User files deletion sucessfully" -ForegroundColor Green 
             }
@@ -823,7 +843,7 @@ Break
         Try{
             Remove-Item -Recurse $WinTemp -Force -ErrorAction SilentlyContinue -ErrorVariable ev 
             }Catch{
-                Add_Error -err_msg $ev -wiz_rec "SFC failed. Please attempt to run manually"     
+                Add_Error -err_msg $ev -wiz_rec "Failed to remove files from $WinTemp"     
             }Finally{
                 Write-Host "Temporary Windows files deleted sucessfully" -ForegroundColor Green
             }
