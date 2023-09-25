@@ -1,5 +1,5 @@
 # Shawn's Magic Wand
-#### Version 2.0.0
+#### Version 2.0.2
 
 ## A Notice about Sources
 
