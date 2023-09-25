@@ -63,7 +63,7 @@ idQBBBg3\,'''''''''''''..,,,=lY.''''''''''''''''''''''''''''''''''''''''''''''''
 Write-Host $Wizard -ForegroundColor Cyan
 $global:Error_Num = 0
 
-Write-Host "Shawn's Magic Wand v2.0.1" -ForegroundColor Gray
+Write-Host "Shawn's Magic Wand v2.0.2" -ForegroundColor Gray
 
 Write-Host "© 2022-2023 Shawn McCausland" -ForegroundColor Gray
 Write-Host " "
@@ -125,7 +125,7 @@ Function Critical_Error($ev, $Wiz_Message, $Allow_Continue) {
 }
 
 Function Add_Error($err_msg, $wiz_rec){
-    $Components_Json = Get-Content .\Spell_Components.json -Raw | ConvertFrom-Json
+    $Components_Json = Get-Content $env:USERPROFILE\Desktop\Spell_Components.json -Raw | ConvertFrom-Json
     $Errors = $Components_Json.Spell_Components.Ritual_Details.Errors
     $Error_Count = $Components_Json.Spell_Components.Ritual_Details.Error_Count
     $Error_Count = $Error_Count += 1
@@ -144,7 +144,8 @@ Function Add_Error($err_msg, $wiz_rec){
 }
 
 Function Update_Steps($name){
-    $Components_Json = Get-Content .\Spell_Components.json -Raw | ConvertFrom-Json
+    $Components = $env:USERPROFILE + "\Desktop\Spell_Components.json"
+    $global:Components_Json = Get-Content $Components -Raw  -ErrorVariable ev  | ConvertFrom-Json
     $type = $Components_Json.Spell_Components.Ritual_Details.Type
     $total = $Components_Json.Spell_Components.Ritual_Details.Total_Steps
     $current = $Components_Json.Spell_Components.Ritual_Details.Current_Step
@@ -161,8 +162,8 @@ Function Update_Steps($name){
 }
 
 Function Update_Json{
-$Components_Json | ConvertTo-Json -Depth 10 | Out-File .\Spell_Components.json
-$Components_Json = Get-Content .\Spell_Components.json -Raw | ConvertFrom-Json
+$Components_Json | ConvertTo-Json -Depth 10 | Out-File $env:USERPROFILE\Desktop\Spell_Components.json
+$Components_Json = Get-Content $env:USERPROFILE\Desktop\Spell_Components.json -Raw | ConvertFrom-Json
 }
 
 Function Happy_Beeps{
@@ -355,8 +356,8 @@ Function Start_Grand_Finale{
     ###3 - Reset Powershell Profile###
     Update_Steps -name "Resetting Powershell Profile"
 	Write-Host "Removing WindowsPowerShell folder..." -ForegroundColor Yellow
-	if (Test-Path "$env:userprofile\Documents\WindowsPowerShell") {
-  	Remove-Item $env:userprofile\Documents\WindowsPowerShell -Recurse
+	if (Test-Path "$env:USERPROFILE\Documents\WindowsPowerShell") {
+  	Remove-Item $env:USERPROFILE\Documents\WindowsPowerShell -Recurse
 	}
 	Write-Host "Removing WindowsPowerShell folder completed" -ForegroundColor Green
 
@@ -439,12 +440,12 @@ Function Start_Grand_Finale{
         Write-Host "17 - Delete Recent Items" -ForegroundColor Cyan
         Write-Host "18 - Run Dispel Magic (Self Deletion Script)" -ForegroundColor Cyan
         Write-Host " "
-        Write-Host " "
     }
     If(!($Ritual_Details.Error_Count -eq 0)){
         $Errors = $Ritual_Details.Errors
+        Write-Host " "
         Write-Host "Magic Wand Encountered " $Ritual_Details.Error_Count.ToString() " Errors during the ritual. Please see details below and manually address them." -ForegroundColor Red
-        Write-Host ""
+        Write-Host " "
         For($ErrorCount = 1; $ErrorCount -le $Ritual_Details.Error_Count; $ErrorCount++ ){
            $current = "Error_" + $ErrorCount
            $error = $Errors.$current
@@ -475,10 +476,10 @@ Function Start_Grand_Finale{
 
     
     $ComponentPath = $env:USERPROFILE + "\Desktop\Spell_Components.json"
-    $DispelMagicPath = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\Dispel_Magic.bat"
+    $ConcentrationPath = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\Spell_Concentration.bat"
     #Assume there is an error until we prove otherwise
     $ComponentHasError = $True
-    $DispelHasError = $True
+    $ConcentrationHasError = $True
         
         ###1 - Delete Spell Components###
 
@@ -491,15 +492,15 @@ Function Start_Grand_Finale{
             Write-Warning "Unable to automatically delete Spell Components. Please manually remove from " $ComponentPath
             }
 
-        ###2 - Delete Dispel Magic###
+        ###2 - Delete Spell Concentration###
 
-        Write-Host "Attempting to remove Dispel Magic from " $DispelMagicPath -ForegroundColor Yellow
-        Remove-Item -Path $DispelMagicPath -Recurse
-        If(!(Test-Path $DispelMagicPath)){
-            Write-Host "Dispel Magic Sucessfully Deleted" -ForegroundColor Green
-            $DispelHasError = $False
+        Write-Host "Attempting to remove Spell Concentration from " $ConcentrationPath -ForegroundColor Yellow
+        Remove-Item -Path $ConcentrationPath -Recurse
+        If(!(Test-Path $ConcentrationPath)){
+            Write-Host "Spell Concentration Sucessfully Deleted" -ForegroundColor Green
+            $ConcentrationHasError = $False
         }Else{
-            Write-Warning "Unable to automatically delete Dispel Magic. Please manually remove from " $DispelMagicPath
+            Write-Warning "Unable to automatically delete Dispel Spell Concentration. Please manually remove from " $ConcentrationPath
             }
 
         ###3 - Delete Magic Wand###
@@ -508,22 +509,25 @@ Function Start_Grand_Finale{
 
             $DispelContents = @"
             @echo OFF
+            color 1b
+            echo Spell Components and Dispel Magic have been removed from the computer.
+            echo In 45 seconds, it will reboot one last time and then it should be good to go!
+            echo Magic Wand along with Dispel Magic will be deleted in 10 seconds.
+            echo Thank you for choosing Shawn's Magic Wand!
+            echo.
             timeout 10 
             cd $env:USERPROFILE\Desktop
             del Shawns_Magic_Wand.exe
-            del Dispel_Magic_2.bat
+            del Dispel_Magic.bat
 "@
-            New-Item -Path "$env:USERPROFILE\Desktop" -name "Dispel_Magic_2.bat" -Type "file" -Value $DispelContents
+            New-Item -Path "$env:USERPROFILE\Desktop" -name "Dispel_Magic.bat" -Type "file" -Value $DispelContents
             
 
 
         ###4 - Final Check###
 
-        If (($ComponentHasError -eq $False) -and ($DispelHasError -eq $False)){
-            Invoke-Expression -Command "$env:USERPROFILE\Desktop\Dispel_Magic_2.bat" #call the batch here so that it doesn't trigger if there was an error removing a different component
-            Happy_Beeps
-            $wshell = New-Object -ComObject Wscript.Shell
-            $wshell.Popup("Spell Components and Dispel Magic have been removed from the computer. In 45 seconds, it will reboot one last time and then it should be good to go! Thank you for choosing Shawn's Magic Wand!",30,"Ritual Complete",0x0)
+        If (($ComponentHasError -eq $False) -and ($ConcentrationHasError -eq $False)){
+            Start-Process -FilePath "$env:USERPROFILE\Desktop\Dispel_Magic.bat" -WindowStyle Maximized #call the batch here so that it doesn't trigger if there was an error removing a different component
             Shutdown /r /t 45
             Exit
         }Else{
@@ -601,7 +605,7 @@ Write-Host "No Conflicts detected, or they have been overridden by the user" -Fo
 
 ###Spell Selection###
 
-Write-Host "Thank you for using choosing Shawn's Magic Wand (v. 2.0.1). Please select a spell from the options below: " -ForegroundColor Cyan
+Write-Host "Thank you for using choosing Shawn's Magic Wand. Please select a spell from the options below: " -ForegroundColor Cyan
 Write-Host "1 - New PC Setup " -ForegroundColor Cyan
 Write-Host "2 - Tune Up " -ForegroundColor Cyan
 $SpellSelection = Read-Host "Enter the number for the spell you want the wizard to cast "
@@ -619,14 +623,15 @@ Write-Host "3 - Install Adobe Reader" -ForegroundColor Cyan
 Write-Host "4 - Install VLC Media Player" -ForegroundColor Cyan
 Write-Host "5 - Windows Updates" -ForegroundColor Cyan
 Write-Host "6 - Application Updates" -ForegroundColor Cyan
-Write-Host "7 - Create Dispel Magic Script" -ForegroundColor Cyan
+Write-Host "7 - Create Spell Concentration Script (Post-Reboot Behavior)" -ForegroundColor Cyan
 Write-Host "8 - System Reboot" -ForegroundColor Cyan
 Write-Host "9 - Re-Check Windows Updates" -ForegroundColor Cyan
 Write-Host "10 - Empty Recycle Bin" -ForegroundColor Cyan
 Write-Host "11 - Remove PowerShell folder (to reset ExecutionPolicy)" -ForegroundColor Cyan
 Write-Host "12 - Delete Recent Items" -ForegroundColor Cyan
 Write-Host "13 - Create a Restore Point" -ForegroundColor Cyan
-Write-Host "14 - Run Dispel Magic (Self Deletion Script)" -ForegroundColor Cyan
+Write-Host "14 - Create Dispel Magic (Self Deletion Script)" -ForegroundColor Cyan
+Write-Host "15 - Final Reboot" -ForegroundColor Cyan
 $confirm = Read-Host "Are you sure you wish to proceed? (Press Y to confirm) "
 If(!($confirm -eq "y" -or $confirm -eq "Y")){
     Write-Host "The magic has fizzled out. Press any key to exit and try again (Ritual was Canceled)" -ForegroundColor Red
@@ -638,7 +643,7 @@ If(!($confirm -eq "y" -or $confirm -eq "Y")){
 
     ###Gather Suspect Info###
         
-    Gather_Suspect_Info -Type "NPS" -Num_Steps 14
+    Gather_Suspect_Info -Type "NPS" -Num_Steps 15
 
     ###1 - Update Winget Libraries###
         Update_Steps -name "Updating Winget"
@@ -754,13 +759,14 @@ Break
     Write-Host "9 - Drive Optimization" -ForegroundColor Cyan
     Write-Host "10 - Windows Updates" -ForegroundColor Cyan
     Write-Host "11- App Updates" -ForegroundColor Cyan
-    Write-Host "12 - Create Dispel Magic (Self Deletion Script)" -ForegroundColor Cyan
+    Write-Host "12 - Create Spell Concentration Script (Post-Reboot Behavior)" -ForegroundColor Cyan
     Write-Host "13 - System Reboot" -ForegroundColor Cyan
     Write-Host "14 - Re-Check Windows Updates" -ForegroundColor Cyan
     Write-Host "15 - Empty Recycle Bin" -ForegroundColor Cyan
     Write-Host "16 - Remove PowerShell folder (to reset ExecutionPolicy)" -ForegroundColor Cyan
     Write-Host "17 - Delete Recent Items" -ForegroundColor Cyan
-    Write-Host "18 - Run Dispel Magic (Self Deletion Script)" -ForegroundColor Cyan
+    Write-Host "18 - Create Dispel Magic (Self Deletion Script)" -ForegroundColor Cyan
+    Write-Host "19 - Final Reboot" -ForegroundColor Cyan
     $confirm = Read-Host "Are you sure you wish to proceed? (y/n)"
 
     If (!($confirm -eq "y")){
@@ -775,7 +781,7 @@ Break
 
         ###Gather Suspect Info###
         
-        Gather_Suspect_Info -Type "Tune Up" -Num_Steps 18
+        Gather_Suspect_Info -Type "Tune Up" -Num_Steps 19
 
 
         ###1 - Create Restore Point###
@@ -893,6 +899,10 @@ Break
 
     }
 Break
+}Default{
+    Write-Host "You broke me. Removing Spell Components Template in prep for re-launch" -ForegroundColor Red
+    Remove-Item $env:USERPROFILE\Desktop\Spell_Components.json
+    Critical_Error -ev "Spell ID invalid" -Wiz_Message "$SpellSelection is not a valid option. Please select enter only the number of the spell you wish to cast" -Allow_Continue "False"
 }
 
 }#Switch
@@ -901,17 +911,17 @@ Break
 
 Write-Host "The first part of the ritual is complete. Saving progress and preparing for reboot.." -ForegroundColor Yellow
 
-Update_Steps -name "Create Dispel Magic Script"
+Update_Steps -name "Create Spell Concentration Script"
 
-Write-Host "Creating Dispel Magic..." -ForegroundColor Yellow
-$DispelMagicContents = @"
+Write-Host "Creating Spell Concentration..." -ForegroundColor Yellow
+$SpellConcentrationContents = @"
     @echo OFF
     PowerShell.exe -NoProfile -Command "& {Start-Process -FilePath $env:USERPROFILE\Desktop\Shawns_Magic_Wand.exe -Verb RunAs}"
     
 
 "@
 
-New-Item -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp" -name "Dispel_Magic.bat" -Type "file" -Value $DispelMagicContents
+New-Item -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp" -name "Spell_Concentration.bat" -Type "file" -Value $SpellConcentrationContents
 
 ###System Reboot###
 

@@ -1,5 +1,18 @@
 # Shawn's Magic Wand
 # Changelog
+
+## Version 2.0.2
+
+### Bugfixes
+- Renamed Dispel_Magic and Dispel_Magic_2 to Spell_Concentration and Dispel_Magic respectively to reduce confusion and better represent what each one does.
+
+- Fixed bug that prevented final self-deletion of Shawn's_Magic_Wand.exe itself
+
+- Fixed a bug that caused errors that occured post-reboot not to be caught
+
+- Fixed bug that caused "steps" to not properly update post-reboot
+
+- Added error catching and handling for Spell Selection in the event an invalid ID is given.
 ## Version 2.0.1
 
 ### Bugfixes
